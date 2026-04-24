@@ -1,0 +1,398 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+  <head>
+    <title>AeroPixel_Ultimate_v6</title>
+    <style type="text/css">
+      @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+      /* Simulation Filters */
+      .protanopia {
+        filter: url('#protanopia-filter');
+      }
+      .deuteranopia {
+        filter: url('#deuteranopia-filter');
+      }
+      .tritanopia {
+        filter: url('#tritanopia-filter');
+      }
+
+      body {
+        background: #0078d7
+          url('https://www.transparenttextures.com/patterns/cubes.png');
+        font-family: 'VT323', monospace;
+        margin: 0;
+        padding: 15px;
+        cursor: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAgMAAABpRbrgAAAADFBMVEUAAAD///8AAAD///8+9uD/AAAAAnRSTlMAAHaTzTgAAAAXSURBVAjXY2hgYHBgYHBggICAgQECAgA8AAL9X8N9GAAAAABJRU5ErkJggg=='),
+          auto;
+      }
+
+      #window {
+        width: 1100px;
+        margin: 0 auto;
+        background: rgba(192, 192, 192, 0.9);
+        border: 4px solid #fff;
+        border-radius: 8px;
+        box-shadow: 12px 12px 0px rgba(0, 0, 0, 0.4);
+      }
+
+      #title-bar {
+        background: linear-gradient(90deg, #000080, #1084d0);
+        color: #fff;
+        padding: 8px 15px;
+        font-size: 26px;
+        border-bottom: 3px solid #fff;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .main-layout {
+        display: flex;
+        padding: 10px;
+        gap: 10px;
+        background: #999;
+      }
+
+      /* Panels */
+      .sidebar {
+        width: 200px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .panel {
+        background: #c0c0c0;
+        border: 3px outset #fff;
+        padding: 10px;
+        box-shadow: inset 1px 1px 0 #fff;
+      }
+      .panel-title {
+        background: #004a80;
+        color: white;
+        padding: 3px;
+        margin-bottom: 8px;
+        text-align: center;
+      }
+
+      /* Color Wheel */
+      #wheel-container {
+        position: relative;
+        width: 150px;
+        height: 150px;
+        margin: 0 auto;
+        border: 3px inset #fff;
+        background: white;
+      }
+      #colorWheel {
+        cursor: crosshair;
+      }
+      #color-preview {
+        height: 25px;
+        border: 3px inset #fff;
+        margin-top: 5px;
+      }
+
+      /* Tools */
+      .tool-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 5px;
+      }
+      button {
+        font-family: 'VT323';
+        font-size: 18px;
+        padding: 5px;
+        cursor: pointer;
+        background: #c0c0c0;
+        border: 3px solid;
+        border-color: #fff #555 #555 #fff;
+      }
+      button:active,
+      .active {
+        border-color: #555 #fff #fff #555;
+        background: #aaa;
+      }
+
+      /* Canvas Control */
+      #canvas-frame {
+        background: #fff;
+        border: 5px inset #fff;
+        position: relative;
+        overflow: hidden;
+      }
+      canvas {
+        display: block;
+        image-rendering: pixelated;
+      }
+
+      /* Layers List */
+      .layer-box {
+        border: 2px inset #fff;
+        background: #eee;
+        margin: 2px 0;
+        padding: 5px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .active-layer {
+        background: #00c6ff;
+        color: white;
+      }
+    </style>
+  </head>
+  <body id="appBody">
+    <div id="window">
+      <div id="title-bar">
+        <span>AEROPREMIUM_PRO.SYS</span>
+        <span>_ [] X</span>
+      </div>
+
+      <div class="main-layout">
+        <div class="sidebar">
+          <div class="panel">
+            <div class="panel-title">BRUSH_CONFIG</div>
+            <div class="tool-grid">
+              <button id="btn-brush" class="active" onclick="setTool('brush')">
+                BRUSH
+              </button>
+              <button id="btn-bucket" onclick="setTool('bucket')">FILL</button>
+              <button id="btn-eraser" onclick="setTool('eraser')">
+                ERASER
+              </button>
+              <button onclick="undo()">UNDO</button>
+            </div>
+            <div style="margin-top: 10px">
+              <label>SIZE:</label>
+              <input
+                type="range"
+                id="sizeSlider"
+                min="1"
+                max="30"
+                value="5"
+                style="width: 100%"
+              />
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title">COLOR_PALETTE</div>
+            <div id="wheel-container">
+              <canvas id="colorWheel" width="150" height="150"></canvas>
+            </div>
+            <div id="color-preview" style="background: #000"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title">VISION_SIM</div>
+            <select
+              onchange="document.getElementById('appBody').className = this.value"
+              style="width: 100%; font-family: 'VT323'"
+            >
+              <option value="normal">NORMAL</option>
+              <option value="protanopia">PROTANOPIA</option>
+              <option value="deuteranopia">DEUTERANOP</option>
+              <option value="tritanopia">TRITANOPIA</option>
+            </select>
+          </div>
+          <button onclick="generateQR()" style="background: #4bff4b">
+            SAVE_TAG.EXE
+          </button>
+        </div>
+
+        <div id="canvas-frame">
+          <canvas id="paintCanvas" width="700" height="520"></canvas>
+        </div>
+
+        <div class="sidebar" style="width: 160px">
+          <div class="panel" style="height: 100%">
+            <div class="panel-title">LAYERS</div>
+            <div id="layerList"></div>
+            <button onclick="addLayer()" style="width: 100%; margin-top: 10px">
+              + NEW
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <svg style="display: none">
+      <defs>
+        <filter id="protanopia-filter">
+          <feColorMatrix
+            values="0.567,0.433,0,0,0, 0.558,0.442,0,0,0, 0,0.242,0.758,0,0, 0,0,0,1,0"
+          />
+        </filter>
+        <filter id="deuteranopia-filter">
+          <feColorMatrix
+            values="0.625,0.375,0,0,0, 0.7,0.3,0,0,0, 0,0.3,0.7,0,0, 0,0,0,1,0"
+          />
+        </filter>
+        <filter id="tritanopia-filter">
+          <feColorMatrix
+            values="0.95,0.05,0,0,0, 0,0.433,0.567,0,0, 0,0.475,0.525,0,0, 0,0,0,1,0"
+          />
+        </filter>
+      </defs>
+    </svg>
+
+    <script type="text/javascript">
+      var canvas = document.getElementById('paintCanvas');
+      var ctx = canvas.getContext('2d');
+      var currentTool = 'brush';
+      var currentColor = '#000000';
+      var brushSize = 5;
+      var painting = false;
+
+      var layers = [{ id: 0, visible: true, strokes: [], fills: [] }];
+      var activeIdx = 0;
+
+      // --- Color Wheel Logic ---
+      var wheel = document.getElementById('colorWheel');
+      var wctx = wheel.getContext('2d');
+      for (var i = 0; i < 360; i += 0.2) {
+        var rad = (i * Math.PI) / 180;
+        wctx.strokeStyle = 'hsl(' + i + ', 100%, 50%)';
+        wctx.beginPath();
+        wctx.moveTo(75, 75);
+        wctx.lineTo(75 + 70 * Math.cos(rad), 75 + 70 * Math.sin(rad));
+        wctx.stroke();
+      }
+      wheel.onclick = function (e) {
+        var r = wheel.getBoundingClientRect();
+        var data = wctx.getImageData(
+          e.clientX - r.left,
+          e.clientY - r.top,
+          1,
+          1
+        ).data;
+        currentColor = 'rgb(' + data[0] + ',' + data[1] + ',' + data[2] + ')';
+        document.getElementById('color-preview').style.background =
+          currentColor;
+      };
+
+      // --- Core Functions ---
+      function setTool(t) {
+        currentTool = t;
+        document
+          .querySelectorAll('.tool-grid button')
+          .forEach((b) => b.classList.remove('active'));
+        document.getElementById('btn-' + t).classList.add('active');
+      }
+
+      function addLayer() {
+        layers.push({
+          id: layers.length,
+          visible: true,
+          strokes: [],
+          fills: [],
+        });
+        activeIdx = layers.length - 1;
+        updateUI();
+      }
+
+      function updateUI() {
+        var list = document.getElementById('layerList');
+        list.innerHTML = '';
+        for (var i = layers.length - 1; i >= 0; i--) {
+          var div = document.createElement('div');
+          div.className = 'layer-box ' + (i == activeIdx ? 'active-layer' : '');
+          div.innerHTML =
+            'L' +
+            i +
+            " <button onclick='layers[" +
+            i +
+            '].visible=!layers[' +
+            i +
+            "].visible; updateUI()'>" +
+            (layers[i].visible ? '👁' : '◻') +
+            '</button>';
+          div.onclick = (function (idx) {
+            return function () {
+              activeIdx = idx;
+              updateUI();
+            };
+          })(i);
+          list.appendChild(div);
+        }
+      }
+
+      document.getElementById('sizeSlider').oninput = function () {
+        brushSize = this.value;
+      };
+
+      canvas.onmousedown = function (e) {
+        var rect = canvas.getBoundingClientRect();
+        var x = e.clientX - rect.left;
+        var y = e.clientY - rect.top;
+
+        if (currentTool === 'bucket') {
+          layers[activeIdx].fills.push({ x: x, y: y, color: currentColor });
+          return;
+        }
+        painting = true;
+        var s = {
+          color: currentTool == 'eraser' ? '#FFF' : currentColor,
+          size: brushSize,
+          points: [{ x: x, y: y }],
+        };
+        layers[activeIdx].strokes.push(s);
+      };
+
+      canvas.onmousemove = function (e) {
+        if (!painting) return;
+        var rect = canvas.getBoundingClientRect();
+        var s = layers[activeIdx].strokes[layers[activeIdx].strokes.length - 1];
+        s.points.push({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+      };
+
+      window.onmouseup = function () {
+        painting = false;
+      };
+
+      function undo() {
+        layers[activeIdx].strokes.pop() || layers[activeIdx].fills.pop();
+      }
+
+      function animate() {
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        var time = Date.now() * 0.005;
+
+        layers.forEach((lyr) => {
+          if (!lyr.visible) return;
+          // Draw Fills
+          lyr.fills.forEach((f) => {
+            ctx.fillStyle = f.color;
+            ctx.beginPath();
+            ctx.arc(f.x, f.y, 40, 0, Math.PI * 2);
+            ctx.fill(); // Pixel-style blob fill
+          });
+          // Draw Strokes
+          lyr.strokes.forEach((s) => {
+            ctx.beginPath();
+            ctx.strokeStyle = s.color;
+            ctx.lineWidth = s.size;
+            ctx.lineCap = 'square';
+            s.points.forEach((p, i) => {
+              var wX = Math.sin(time + i * 0.5) * 2;
+              var wY = Math.cos(time + i * 0.5) * 2;
+              if (i == 0) ctx.moveTo(p.x + wX, p.y + wY);
+              else ctx.lineTo(p.x + wX, p.y + wY);
+            });
+            ctx.stroke();
+          });
+        });
+        requestAnimationFrame(animate);
+      }
+
+      function generateQR() {
+        var dummy =
+          'https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=AERO_TAG';
+        window.open(dummy, 'QR', 'width=200,height=200');
+      }
+
+      updateUI();
+      animate();
+    </script>
+  </body>
+</html>
