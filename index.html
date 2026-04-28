@@ -1,398 +1,350 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
-  <head>
-    <title>AeroPixel_Ultimate_v6</title>
+<head>
+  <meta charset="UTF-8">
+    <title>RAGE</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <style type="text/css">
-      @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
-      /* Simulation Filters */
-      .protanopia {
-        filter: url('#protanopia-filter');
-      }
-      .deuteranopia {
-        filter: url('#deuteranopia-filter');
-      }
-      .tritanopia {
-        filter: url('#tritanopia-filter');
-      }
+        body { 
+            background: #020502; color: #4a7c59; 
+            font-family: 'VT323', monospace; margin: 0; padding: 10px;
+            cursor: crosshair; overflow: hidden;
+        }
 
-      body {
-        background: #0078d7
-          url('https://www.transparenttextures.com/patterns/cubes.png');
-        font-family: 'VT323', monospace;
-        margin: 0;
-        padding: 15px;
-        cursor: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAgMAAABpRbrgAAAADFBMVEUAAAD///8AAAD///8+9uD/AAAAAnRSTlMAAHaTzTgAAAAXSURBVAjXY2hgYHBgYHBggICAgQECAgA8AAL9X8N9GAAAAABJRU5ErkJggg=='),
-          auto;
-      }
+        #window { 
+            width: 1350px; margin: 0 auto; background: rgba(5, 8, 5, 0.98); 
+            border: 2px solid #1a2e1f; box-shadow: 0 0 60px #000; display: flex; flex-direction: column;
+        }
 
-      #window {
-        width: 1100px;
-        margin: 0 auto;
-        background: rgba(192, 192, 192, 0.9);
-        border: 4px solid #fff;
-        border-radius: 8px;
-        box-shadow: 12px 12px 0px rgba(0, 0, 0, 0.4);
-      }
+        #title-bar { 
+            background: #0a1a0f; color: #5ea371; padding: 10px; font-size: 24px; 
+            display: flex; justify-content: space-between; border-bottom: 2px solid #1a2e1f;
+        }
 
-      #title-bar {
-        background: linear-gradient(90deg, #000080, #1084d0);
-        color: #fff;
-        padding: 8px 15px;
-        font-size: 26px;
-        border-bottom: 3px solid #fff;
-        display: flex;
-        justify-content: space-between;
-      }
+        .main-layout { display: flex; padding: 15px; gap: 15px; background: #000; height: 650px;}
 
-      .main-layout {
-        display: flex;
-        padding: 10px;
-        gap: 10px;
-        background: #999;
-      }
+        .sidebar { width: 240px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto;}
+        .panel { background: #050805; border: 1px solid #1a2e1f; padding: 10px; position: relative; }
+        .panel-h { font-size: 14px; color: #2d4d36; margin-bottom: 8px; text-transform: uppercase; border-bottom: 1px solid #0f1a11; }
 
-      /* Panels */
-      .sidebar {
-        width: 200px;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-      .panel {
-        background: #c0c0c0;
-        border: 3px outset #fff;
-        padding: 10px;
-        box-shadow: inset 1px 1px 0 #fff;
-      }
-      .panel-title {
-        background: #004a80;
-        color: white;
-        padding: 3px;
-        margin-bottom: 8px;
-        text-align: center;
-      }
+        button { 
+            font-family: 'VT323'; font-size: 16px; padding: 4px; cursor: pointer;
+            background: #0a120a; color: #4a7c59; border: 1px solid #1a2e1f; width: 100%; margin-bottom: 2px;
+        }
+        button:hover { background: #1a2e1f; color: #8fbc8f; }
+        .active { background: #0f1a11 !important; color: #8fbc8f !important; border-color: #4a7c59 !important; }
+        
+        #canvas-frame { background: #000; border: 1px solid #1a2e1f; position: relative; flex-grow: 1; overflow: hidden;}
+        canvas { display: block; image-rendering: pixelated; width: 100%; height: 100%;}
 
-      /* Color Wheel */
-      #wheel-container {
-        position: relative;
-        width: 150px;
-        height: 150px;
-        margin: 0 auto;
-        border: 3px inset #fff;
-        background: white;
-      }
-      #colorWheel {
-        cursor: crosshair;
-      }
-      #color-preview {
-        height: 25px;
-        border: 3px inset #fff;
-        margin-top: 5px;
-      }
+        .layer-item { 
+            padding: 6px; border: 1px solid #1a2e1f; margin-bottom: 4px; 
+            background: #020502; display: flex; justify-content: space-between; align-items: center;
+        }
+        .active-layer { border-color: #4a7c59; background: #0a1a0f; color: #8fbc8f; }
+        .tiny-btn { width: 22px; height: 22px; font-size: 10px; padding: 0; margin-left: 2px;}
 
-      /* Tools */
-      .tool-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 5px;
-      }
-      button {
-        font-family: 'VT323';
-        font-size: 18px;
-        padding: 5px;
-        cursor: pointer;
-        background: #c0c0c0;
-        border: 3px solid;
-        border-color: #fff #555 #555 #fff;
-      }
-      button:active,
-      .active {
-        border-color: #555 #fff #fff #555;
-        background: #aaa;
-      }
+        input[type=range] { appearance: none; background: #0a120a; border: 1px solid #1a2e1f; height: 4px; width: 100%; margin: 6px 0; }
+        input[type=range]::-webkit-slider-thumb { appearance: none; width: 12px; height: 12px; background: #4a7c59; cursor: pointer; }
 
-      /* Canvas Control */
-      #canvas-frame {
-        background: #fff;
-        border: 5px inset #fff;
-        position: relative;
-        overflow: hidden;
-      }
-      canvas {
-        display: block;
-        image-rendering: pixelated;
-      }
+        #qr-overlay { 
+            position: absolute; top:0; left:0; width:100%; height:100%; 
+            background: rgba(0,0,0,0.9); display: none; flex-direction: column; 
+            align-items: center; justify-content: center; z-index: 100;
+        }
 
-      /* Layers List */
-      .layer-box {
-        border: 2px inset #fff;
-        background: #eee;
-        margin: 2px 0;
-        padding: 5px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      .active-layer {
-        background: #00c6ff;
-        color: white;
-      }
+        .footer { padding: 6px 20px; background: #0a1a0f; font-size: 12px; color: #2d4d36; display: flex; justify-content: space-between; }
     </style>
-  </head>
-  <body id="appBody">
-    <div id="window">
-      <div id="title-bar">
-        <span>AEROPREMIUM_PRO.SYS</span>
-        <span>_ [] X</span>
-      </div>
+</head>
+<body>
 
-      <div class="main-layout">
+<div id="window">
+    <div id="title-bar">
+        <span>⚰️ RAGE_v69 // Save your art by generating a QR code!</span>
+        <div style="display: flex; gap: 10px;">
+            <button onclick="undo()" style="width: 60px;">Undo</button>
+            <button onclick="redo()" style="width: 60px;">Redo</button>
+        </div>
+    </div>
+
+    <div class="main-layout">
         <div class="sidebar">
-          <div class="panel">
-            <div class="panel-title">BRUSH_CONFIG</div>
-            <div class="tool-grid">
-              <button id="btn-brush" class="active" onclick="setTool('brush')">
-                BRUSH
-              </button>
-              <button id="btn-bucket" onclick="setTool('bucket')">FILL</button>
-              <button id="btn-eraser" onclick="setTool('eraser')">
-                ERASER
-              </button>
-              <button onclick="undo()">UNDO</button>
+            <div class="panel">
+                <div class="panel-h">Tools</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
+                    <button id="t-brush" class="active" onclick="setTool('brush')">Strand</button>
+                    <button id="t-select" onclick="setTool('select')">Select</button>
+                    <button id="t-rect" onclick="setTool('rect')">Square</button>
+                    <button id="t-circle" onclick="setTool('circle')">Circle</button>
+                    <button id="t-eraser" onclick="setTool('eraser')">Void</button>
+                    <button onclick="nukeEverything()" style="color:#f55">Purge</button>
+                </div>
             </div>
-            <div style="margin-top: 10px">
-              <label>SIZE:</label>
-              <input
-                type="range"
-                id="sizeSlider"
-                min="1"
-                max="30"
-                value="5"
-                style="width: 100%"
-              />
-            </div>
-          </div>
 
-          <div class="panel">
-            <div class="panel-title">COLOR_PALETTE</div>
-            <div id="wheel-container">
-              <canvas id="colorWheel" width="150" height="150"></canvas>
+            <div class="panel">
+                <div class="panel-h">Vibration_Engine</div>
+                <select id="vibeSelect" onchange="updateActiveLayerSettings()" style="width:100%; background:#000; color:#4a7c59; border:1px solid #1a2e1f; font-family:'VT323';">
+                    <option value="classic">Classic_Sway</option>
+                    <option value="ethereal">Ethereal_Float</option>
+                    <option value="punk">Punk_Jitter</option>
+                    <option value="orbital">Orbital_Decay</option>
+                </select>
+                <input type="range" id="disruptSlider" min="0" max="60" value="5" oninput="updateActiveLayerSettings()">
             </div>
-            <div id="color-preview" style="background: #000"></div>
-          </div>
 
-          <div class="panel">
-            <div class="panel-title">VISION_SIM</div>
-            <select
-              onchange="document.getElementById('appBody').className = this.value"
-              style="width: 100%; font-family: 'VT323'"
-            >
-              <option value="normal">NORMAL</option>
-              <option value="protanopia">PROTANOPIA</option>
-              <option value="deuteranopia">DEUTERANOP</option>
-              <option value="tritanopia">TRITANOPIA</option>
-            </select>
-          </div>
-          <button onclick="generateQR()" style="background: #4bff4b">
-            SAVE_TAG.EXE
-          </button>
+            <div class="panel">
+                <div class="panel-h">Alchemy</div>
+                <button onclick="makeVibrant()" style="background: #1a331a; color: #0f0; border-color: #0f0;">+ BOOST_VIBRANCY</button>
+                <label>SIZE</label>
+                <input type="range" id="sizeSlider" min="1" max="100" value="2">
+            </div>
+
+            <div class="panel">
+                <div class="panel-h">Export</div>
+                <button onclick="generateQR()" style="background: #2d4d36; color: #fff;">GENERATE_QR_CODE</button>
+            </div>
         </div>
 
         <div id="canvas-frame">
-          <canvas id="paintCanvas" width="700" height="520"></canvas>
+            <canvas id="paintCanvas" width="800" height="600"></canvas>
+            <div id="qr-overlay">
+                <canvas id="qr-canvas"></canvas>
+                <p>SCAN TO HARVEST PNG/GIF</p>
+                <button onclick="document.getElementById('qr-overlay').style.display='none'" style="width:200px">RETURN_TO_VOID</button>
+            </div>
         </div>
 
-        <div class="sidebar" style="width: 160px">
-          <div class="panel" style="height: 100%">
-            <div class="panel-title">LAYERS</div>
-            <div id="layerList"></div>
-            <button onclick="addLayer()" style="width: 100%; margin-top: 10px">
-              + NEW
-            </button>
-          </div>
+        <div class="sidebar" style="width:220px">
+            <div class="panel" style="flex-grow:1; display:flex; flex-direction:column;">
+                <div class="panel-h">Layers</div>
+                <div id="layerList" style="overflow-y:auto; flex-grow:1;"></div>
+                <button onclick="addLayer()" style="background:#1a2e1f; margin-top:5px;">+ NEW_STRAND</button>
+            </div>
+            
+            <div class="panel">
+                <div class="panel-h">Color</div>
+                <canvas id="colorWheel" width="200" height="80"></canvas>
+                <input type="range" id="alphaSlider" min="0" max="100" value="80">
+                <div id="color-preview" style="height:15px; border:1px solid #1a2e1f; margin-top:5px;"></div>
+            </div>
         </div>
-      </div>
     </div>
+    <div class="footer">
+        <span>X/Y: <span id="coords">0,0</span></span>
+        <span>UNDO_STACK: <span id="undoCount">0</span></span>
+        <span>ENGINE: RAGE_v69_PRO</span>
+    </div>
+</div>
 
-    <svg style="display: none">
-      <defs>
-        <filter id="protanopia-filter">
-          <feColorMatrix
-            values="0.567,0.433,0,0,0, 0.558,0.442,0,0,0, 0,0.242,0.758,0,0, 0,0,0,1,0"
-          />
-        </filter>
-        <filter id="deuteranopia-filter">
-          <feColorMatrix
-            values="0.625,0.375,0,0,0, 0.7,0.3,0,0,0, 0,0.3,0.7,0,0, 0,0,0,1,0"
-          />
-        </filter>
-        <filter id="tritanopia-filter">
-          <feColorMatrix
-            values="0.95,0.05,0,0,0, 0,0.433,0.567,0,0, 0,0.475,0.525,0,0, 0,0,0,1,0"
-          />
-        </filter>
-      </defs>
-    </svg>
+<script>
+    const canvas = document.getElementById('paintCanvas');
+    const ctx = canvas.getContext('2d');
+    let tool = 'brush', color = { r:74, g:124, b:89, a:0.8 }, thickness = 2, painting = false, selectedObj = null, offset = {x:0, y:0};
+    
+    let layers = [{ id: Date.now(), visible: true, objects: [], vibe: 'classic', disruption: 5 }];
+    let activeIdx = 0;
 
-    <script type="text/javascript">
-      var canvas = document.getElementById('paintCanvas');
-      var ctx = canvas.getContext('2d');
-      var currentTool = 'brush';
-      var currentColor = '#000000';
-      var brushSize = 5;
-      var painting = false;
+    let undoStack = [];
+    let redoStack = [];
 
-      var layers = [{ id: 0, visible: true, strokes: [], fills: [] }];
-      var activeIdx = 0;
+    // --- History Management ---
+    function saveState() {
+        undoStack.push(JSON.stringify(layers));
+        if(undoStack.length > 50) undoStack.shift();
+        redoStack = [];
+        updateFooter();
+    }
 
-      // --- Color Wheel Logic ---
-      var wheel = document.getElementById('colorWheel');
-      var wctx = wheel.getContext('2d');
-      for (var i = 0; i < 360; i += 0.2) {
-        var rad = (i * Math.PI) / 180;
-        wctx.strokeStyle = 'hsl(' + i + ', 100%, 50%)';
-        wctx.beginPath();
-        wctx.moveTo(75, 75);
-        wctx.lineTo(75 + 70 * Math.cos(rad), 75 + 70 * Math.sin(rad));
-        wctx.stroke();
-      }
-      wheel.onclick = function (e) {
-        var r = wheel.getBoundingClientRect();
-        var data = wctx.getImageData(
-          e.clientX - r.left,
-          e.clientY - r.top,
-          1,
-          1
-        ).data;
-        currentColor = 'rgb(' + data[0] + ',' + data[1] + ',' + data[2] + ')';
-        document.getElementById('color-preview').style.background =
-          currentColor;
-      };
-
-      // --- Core Functions ---
-      function setTool(t) {
-        currentTool = t;
-        document
-          .querySelectorAll('.tool-grid button')
-          .forEach((b) => b.classList.remove('active'));
-        document.getElementById('btn-' + t).classList.add('active');
-      }
-
-      function addLayer() {
-        layers.push({
-          id: layers.length,
-          visible: true,
-          strokes: [],
-          fills: [],
-        });
-        activeIdx = layers.length - 1;
+    function undo() {
+        if(undoStack.length === 0) return;
+        redoStack.push(JSON.stringify(layers));
+        layers = JSON.parse(undoStack.pop());
+        activeIdx = Math.min(activeIdx, layers.length - 1);
         updateUI();
-      }
+    }
 
-      function updateUI() {
-        var list = document.getElementById('layerList');
-        list.innerHTML = '';
-        for (var i = layers.length - 1; i >= 0; i--) {
-          var div = document.createElement('div');
-          div.className = 'layer-box ' + (i == activeIdx ? 'active-layer' : '');
-          div.innerHTML =
-            'L' +
-            i +
-            " <button onclick='layers[" +
-            i +
-            '].visible=!layers[' +
-            i +
-            "].visible; updateUI()'>" +
-            (layers[i].visible ? '👁' : '◻') +
-            '</button>';
-          div.onclick = (function (idx) {
-            return function () {
-              activeIdx = idx;
-              updateUI();
-            };
-          })(i);
-          list.appendChild(div);
-        }
-      }
+    function redo() {
+        if(redoStack.length === 0) return;
+        undoStack.push(JSON.stringify(layers));
+        layers = JSON.parse(redoStack.pop());
+        updateUI();
+    }
 
-      document.getElementById('sizeSlider').oninput = function () {
-        brushSize = this.value;
-      };
-
-      canvas.onmousedown = function (e) {
-        var rect = canvas.getBoundingClientRect();
-        var x = e.clientX - rect.left;
-        var y = e.clientY - rect.top;
-
-        if (currentTool === 'bucket') {
-          layers[activeIdx].fills.push({ x: x, y: y, color: currentColor });
-          return;
-        }
-        painting = true;
-        var s = {
-          color: currentTool == 'eraser' ? '#FFF' : currentColor,
-          size: brushSize,
-          points: [{ x: x, y: y }],
-        };
-        layers[activeIdx].strokes.push(s);
-      };
-
-      canvas.onmousemove = function (e) {
-        if (!painting) return;
-        var rect = canvas.getBoundingClientRect();
-        var s = layers[activeIdx].strokes[layers[activeIdx].strokes.length - 1];
-        s.points.push({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-      };
-
-      window.onmouseup = function () {
-        painting = false;
-      };
-
-      function undo() {
-        layers[activeIdx].strokes.pop() || layers[activeIdx].fills.pop();
-      }
-
-      function animate() {
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        var time = Date.now() * 0.005;
-
-        layers.forEach((lyr) => {
-          if (!lyr.visible) return;
-          // Draw Fills
-          lyr.fills.forEach((f) => {
-            ctx.fillStyle = f.color;
-            ctx.beginPath();
-            ctx.arc(f.x, f.y, 40, 0, Math.PI * 2);
-            ctx.fill(); // Pixel-style blob fill
-          });
-          // Draw Strokes
-          lyr.strokes.forEach((s) => {
-            ctx.beginPath();
-            ctx.strokeStyle = s.color;
-            ctx.lineWidth = s.size;
-            ctx.lineCap = 'square';
-            s.points.forEach((p, i) => {
-              var wX = Math.sin(time + i * 0.5) * 2;
-              var wY = Math.cos(time + i * 0.5) * 2;
-              if (i == 0) ctx.moveTo(p.x + wX, p.y + wY);
-              else ctx.lineTo(p.x + wX, p.y + wY);
+    // --- Vibrant Engine ---
+    function makeVibrant() {
+        saveState();
+        layers.forEach(lyr => {
+            lyr.objects.forEach(obj => {
+                let rgba = obj.color.match(/\d+(\.\d+)?/g);
+                if(rgba) {
+                    let r = Math.min(255, rgba[0] * 1.5);
+                    let g = Math.min(255, rgba[1] * 1.5);
+                    let b = Math.min(255, rgba[2] * 1.5);
+                    obj.color = `rgba(${r},${g},${b},${rgba[3]})`;
+                }
             });
-            ctx.stroke();
-          });
+        });
+    }
+
+    // --- QR / Export ---
+    function generateQR() {
+        const dataURL = canvas.toDataURL("image/png");
+        const qr = new QRious({
+            element: document.getElementById('qr-canvas'),
+            value: dataURL,
+            size: 250,
+            background: '#000',
+            foreground: '#4a7c59'
+        });
+        document.getElementById('qr-overlay').style.display = 'flex';
+    }
+
+    // --- Color ---
+    const wheel = document.getElementById('colorWheel');
+    const wctx = wheel.getContext('2d');
+    function initWheel() {
+        for(let i=0; i<200; i++) {
+            let h = (i/200)*360; wctx.fillStyle = `hsl(${h}, 50%, 40%)`; wctx.fillRect(i, 0, 1, 40);
+            let g = (i/200)*255; wctx.fillStyle = `rgb(${g},${g},${g})`; wctx.fillRect(i, 45, 1, 35);
+        }
+    }
+    initWheel();
+    wheel.onclick = (e) => {
+        const r = wheel.getBoundingClientRect();
+        const d = wctx.getImageData(e.clientX-r.left, e.clientY-r.top, 1, 1).data;
+        color.r = d[0]; color.g = d[1]; color.b = d[2]; updatePreview();
+    };
+    function updatePreview() { 
+        color.a = document.getElementById('alphaSlider').value / 100;
+        document.getElementById('color-preview').style.background = `rgba(${color.r},${color.g},${color.b},${color.a})`; 
+    }
+
+    // --- Layers & UI ---
+    function setTool(t) { tool = t; updateUI(); }
+    function setVibe(v) { layers[activeIdx].vibe = v; updateUI(); }
+    function updateActiveLayerSettings() { 
+        layers[activeIdx].vibe = document.getElementById('vibeSelect').value;
+        layers[activeIdx].disruption = document.getElementById('disruptSlider').value; 
+    }
+
+    function addLayer() {
+        saveState();
+        layers.push({ id: Date.now(), visible: true, objects: [], vibe: 'classic', disruption: 5 });
+        activeIdx = layers.length-1;
+        updateUI();
+    }
+
+    function moveLayer(idx, dir) {
+        if (idx + dir < 0 || idx + dir >= layers.length) return;
+        saveState();
+        const temp = layers[idx];
+        layers[idx] = layers[idx + dir];
+        layers[idx + dir] = temp;
+        activeIdx = idx + dir;
+        updateUI();
+    }
+
+    function deleteLayer(idx, e) {
+        e.stopPropagation(); if(layers.length <= 1) return;
+        saveState();
+        layers.splice(idx, 1); activeIdx = Math.max(0, activeIdx - 1); updateUI();
+    }
+
+    function updateUI() {
+        const list = document.getElementById('layerList'); list.innerHTML = "";
+        layers.forEach((l, i) => {
+            const div = document.createElement('div');
+            div.className = "layer-item " + (i==activeIdx?'active-layer':'');
+            div.onclick = () => { activeIdx=i; syncSettings(); updateUI(); };
+            div.innerHTML = `<span>Strand_${i}</span> <div class="layer-btn-row">
+                <button class="tiny-btn" onclick="moveLayer(${i}, 1); event.stopPropagation();">▲</button>
+                <button class="tiny-btn" onclick="moveLayer(${i}, -1); event.stopPropagation();">▼</button>
+                <button class="tiny-btn" onclick="layers[${i}].visible=!layers[${i}].visible; event.stopPropagation(); updateUI();">${l.visible?'👁':'◻'}</button>
+                <button class="tiny-btn" style="color:#a44" onclick="deleteLayer(${i}, event)">✕</button>
+            </div>`;
+            list.prepend(div);
+        });
+        syncSettings();
+        updateFooter();
+    }
+
+    function syncSettings() {
+        const lyr = layers[activeIdx];
+        document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+        document.getElementById('t-'+tool).classList.add('active');
+        document.getElementById('vibeSelect').value = lyr.vibe;
+        document.getElementById('disruptSlider').value = lyr.disruption;
+    }
+
+    function updateFooter() {
+        document.getElementById('undoCount').innerText = undoStack.length;
+    }
+
+    function nukeEverything() { if(confirm("VOID ALL?")) { saveState(); layers = [{ id: Date.now(), visible: true, objects: [], vibe: 'classic', disruption: 5 }]; activeIdx = 0; updateUI(); } }
+
+    // --- Input Interaction ---
+    canvas.onmousedown = (e) => {
+        const r = canvas.getBoundingClientRect(); const x = e.clientX-r.left, y = e.clientY-r.top;
+        if(tool === 'select') {
+            selectedObj = null;
+            for(let i=layers[activeIdx].objects.length-1; i>=0; i--) {
+                let o = layers[activeIdx].objects[i];
+                if((o.type === 'brush' && o.pts.some(p => Math.abs(p.x-x)<15 && Math.abs(p.y-y)<15)) || 
+                   ((o.type === 'rect' || o.type === 'circle') && Math.abs(o.x-x)<30 && Math.abs(o.y-y)<30)) {
+                    saveState(); selectedObj = o; offset = {x, y}; break;
+                }
+            } return;
+        }
+        saveState();
+        painting = true;
+        layers[activeIdx].objects.push({
+            type: tool, color: `rgba(${color.r},${color.g},${color.b},${color.a})`,
+            thickness: document.getElementById('sizeSlider').value, pts: [{x, y}], x, y, w: 0, h: 0
+        });
+    };
+
+    canvas.onmousemove = (e) => {
+        const r = canvas.getBoundingClientRect(); const x = e.clientX-r.left, y = e.clientY-r.top;
+        document.getElementById('coords').innerText = Math.floor(x)+","+Math.floor(y);
+        if(tool === 'select' && selectedObj) {
+            const dx = x - offset.x, dy = y - offset.y;
+            if(selectedObj.pts) selectedObj.pts.forEach(p => { p.x += dx; p.y += dy; });
+            selectedObj.x += dx; selectedObj.y += dy; offset = {x, y}; return;
+        }
+        if(!painting) return;
+        let o = layers[activeIdx].objects[layers[activeIdx].objects.length-1];
+        if(o.type === 'brush' || o.type === 'eraser') o.pts.push({x, y}); else { o.w = x-o.x; o.h = y-o.y; }
+    };
+    window.onmouseup = () => { painting = false; selectedObj = null; };
+
+    function animate() {
+        ctx.clearRect(0,0,canvas.width, canvas.height);
+        const t = Date.now() * 0.005;
+        layers.forEach(lyr => {
+            if(!lyr.visible) return;
+            const d = lyr.disruption, v = lyr.vibe;
+            lyr.objects.forEach(o => {
+                ctx.beginPath(); ctx.strokeStyle = o.color; ctx.lineWidth = o.thickness; ctx.lineCap = 'round';
+                const distort = (i) => {
+                    if(v === 'classic') return { x: Math.sin(t + i*0.2)*d, y: 0 };
+                    if(v === 'ethereal') return { x: Math.sin(t + i*0.5)*d, y: Math.cos(t + i*0.5)*d };
+                    if(v === 'punk') return { x: (Math.random()-0.5)*d, y: (Math.random()-0.5)*d };
+                    if(v === 'orbital') return { x: Math.cos(t*2 + i)*d, y: Math.sin(t*0.5 + i)*d };
+                    return {x:0, y:0};
+                };
+                if(o.type === 'brush' || o.type === 'eraser') {
+                    if(o.type === 'eraser') ctx.strokeStyle = "#000";
+                    o.pts.forEach((p, i) => { const dr = distort(i); if(i===0) ctx.moveTo(p.x+dr.x, p.y+dr.y); else ctx.lineTo(p.x+dr.x, p.y+dr.y); });
+                } else if(o.type === 'rect') { const dr = distort(0); ctx.strokeRect(o.x+dr.x, o.y+dr.y, o.w, o.h); }
+                else if(o.type === 'circle') { const dr = distort(0); const rad = Math.sqrt(o.w**2 + o.h**2); ctx.arc(o.x+dr.x, o.y+dr.y, rad, 0, Math.PI*2); }
+                ctx.stroke();
+            });
         });
         requestAnimationFrame(animate);
-      }
-
-      function generateQR() {
-        var dummy =
-          'https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=AERO_TAG';
-        window.open(dummy, 'QR', 'width=200,height=200');
-      }
-
-      updateUI();
-      animate();
-    </script>
-  </body>
+    }
+    updateUI(); animate();
+</script>
+</body>
 </html>
