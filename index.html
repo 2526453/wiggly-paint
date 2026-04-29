@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
     <title>RAGE</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
     <style type="text/css">
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
@@ -48,6 +49,7 @@
 
         input[type=range] { appearance: none; background: #0a120a; border: 1px solid #1a2e1f; height: 4px; width: 100%; margin: 6px 0; }
         input[type=range]::-webkit-slider-thumb { appearance: none; width: 12px; height: 12px; background: #4a7c59; cursor: pointer; }
+        #colorWheel { width: 100%; height: auto; cursor: crosshair; border: 1px solid #1a2e1f; margin-bottom: 5px; }
 
         #qr-overlay { 
             position: absolute; top:0; left:0; width:100%; height:100%; 
@@ -102,17 +104,23 @@
             </div>
 
             <div class="panel">
-                <div class="panel-h">Export</div>
-                <button onclick="generateQR()" style="background: #2d4d36; color: #fff;">GENERATE_QR_CODE</button>
+                <div class="panel-h">Color</div>
+                <canvas id="colorWheel" width="200" height="200"></canvas>
+                <input type="range" id="alphaSlider" min="0" max="100" value="80" oninput="updatePreview()">
+                <div id="color-preview" style="height:15px; border:1px solid #1a2e1f; margin-top:5px;"></div>
+                <div id="color-hover-label" style="font-size:12px; color:#8fbc8f; margin-top:5px;">Hover color: none</div>
             </div>
         </div>
 
         <div id="canvas-frame">
             <canvas id="paintCanvas" width="800" height="600"></canvas>
             <div id="qr-overlay">
-                <canvas id="qr-canvas"></canvas>
-                <p>SCAN TO HARVEST PNG/GIF</p>
-                <button onclick="document.getElementById('qr-overlay').style.display='none'" style="width:200px">RETURN_TO_VOID</button>
+                <div style="text-align: center;">
+                    <canvas id="qr-canvas"></canvas>
+                    <p id="qr-label">SCAN TO HARVEST PNG/GIF</p>
+                    <button onclick="document.getElementById('qr-overlay').style.display='none'" style="width:200px; margin-top: 15px;">RETURN_TO_VOID</button>
+                    <button onclick="downloadQrImage()" style="width:200px; margin-top: 5px; background: #332d1a;">⬇ SAVE_QR_CODE</button>
+                </div>
             </div>
         </div>
 
@@ -122,15 +130,9 @@
                 <div id="layerList" style="overflow-y:auto; flex-grow:1;"></div>
                 <button onclick="addLayer()" style="background:#1a2e1f; margin-top:5px;">+ NEW_STRAND</button>
             </div>
-            
-            <div class="panel">
-                <div class="panel-h">Color</div>
-                <canvas id="colorWheel" width="200" height="80"></canvas>
-                <input type="range" id="alphaSlider" min="0" max="100" value="80">
-                <div id="color-preview" style="height:15px; border:1px solid #1a2e1f; margin-top:5px;"></div>
-            </div>
         </div>
     </div>
+
     <div class="footer">
         <span>X/Y: <span id="coords">0,0</span></span>
         <span>UNDO_STACK: <span id="undoCount">0</span></span>
@@ -198,27 +200,126 @@
             background: '#000',
             foreground: '#4a7c59'
         });
+        document.getElementById('qr-label').innerText = "SCAN_FOR_PNG";
         document.getElementById('qr-overlay').style.display = 'flex';
+    }
+
+
+
+    function downloadQrImage() {
+        const qrCanvas = document.getElementById('qr-canvas');
+        const a = document.createElement('a');
+        a.href = qrCanvas.toDataURL('image/png');
+        a.download = `qr-code_${Date.now()}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     }
 
     // --- Color ---
     const wheel = document.getElementById('colorWheel');
     const wctx = wheel.getContext('2d');
-    function initWheel() {
-        for(let i=0; i<200; i++) {
-            let h = (i/200)*360; wctx.fillStyle = `hsl(${h}, 50%, 40%)`; wctx.fillRect(i, 0, 1, 40);
-            let g = (i/200)*255; wctx.fillStyle = `rgb(${g},${g},${g})`; wctx.fillRect(i, 45, 1, 35);
-        }
+    const outerRadius = Math.min(wheel.width, wheel.height) / 2 - 1;
+    const colorRadius = outerRadius - 18;
+    const wheelCenter = { x: wheel.width / 2, y: wheel.height / 2 };
+
+    function hsvToRgb(h, s, v) {
+        let c = v * s;
+        let x = c * (1 - Math.abs((h / 60) % 2 - 1));
+        let m = v - c;
+        let r = 0, g = 0, b = 0;
+        if (h < 60) { r = c; g = x; b = 0; }
+        else if (h < 120) { r = x; g = c; b = 0; }
+        else if (h < 180) { r = 0; g = c; b = x; }
+        else if (h < 240) { r = 0; g = x; b = c; }
+        else if (h < 300) { r = x; g = 0; b = c; }
+        else { r = c; g = 0; b = x; }
+        return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
     }
+
+    function initWheel() {
+        const img = wctx.createImageData(wheel.width, wheel.height);
+        for (let y = 0; y < wheel.height; y++) {
+            for (let x = 0; x < wheel.width; x++) {
+                const dx = x - wheelCenter.x;
+                const dy = y - wheelCenter.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const idx = (y * wheel.width + x) * 4;
+                if (dist <= colorRadius) {
+                    const hue = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;
+                    const sat = dist / colorRadius;
+                    const [r, g, b] = hsvToRgb(hue, sat, 1);
+                    img.data[idx] = r;
+                    img.data[idx + 1] = g;
+                    img.data[idx + 2] = b;
+                    img.data[idx + 3] = 255;
+                } else if (dist <= outerRadius) {
+                    img.data[idx] = 0;
+                    img.data[idx + 1] = 0;
+                    img.data[idx + 2] = 0;
+                    img.data[idx + 3] = 255;
+                } else {
+                    img.data[idx] = 10;
+                    img.data[idx + 1] = 10;
+                    img.data[idx + 2] = 10;
+                    img.data[idx + 3] = 255;
+                }
+            }
+        }
+        wctx.putImageData(img, 0, 0);
+    }
+
+    function getWheelColorAt(x, y) {
+        const dx = x - wheelCenter.x;
+        const dy = y - wheelCenter.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > outerRadius) return null;
+        if (dist > colorRadius) return { r: 0, g: 0, b: 0 };
+        const hue = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;
+        const sat = dist / colorRadius;
+        const [r, g, b] = hsvToRgb(hue, sat, 1);
+        return { r, g, b };
+    }
+
     initWheel();
+    updatePreview();
     wheel.onclick = (e) => {
         const r = wheel.getBoundingClientRect();
-        const d = wctx.getImageData(e.clientX-r.left, e.clientY-r.top, 1, 1).data;
-        color.r = d[0]; color.g = d[1]; color.b = d[2]; updatePreview();
+        const x = e.clientX - r.left;
+        const y = e.clientY - r.top;
+        const selected = getWheelColorAt(x, y);
+        if (!selected) return;
+        color.r = selected.r;
+        color.g = selected.g;
+        color.b = selected.b;
+        updatePreview();
     };
-    function updatePreview() { 
+
+    wheel.onmousemove = (e) => {
+        const r = wheel.getBoundingClientRect();
+        const x = e.clientX - r.left;
+        const y = e.clientY - r.top;
+        const hover = getWheelColorAt(x, y);
+        const label = document.getElementById('color-hover-label');
+        const preview = document.getElementById('color-preview');
+        const alpha = document.getElementById('alphaSlider').value / 100;
+        if (hover) {
+            label.innerText = `Hover color: rgba(${hover.r}, ${hover.g}, ${hover.b}, ${alpha.toFixed(2)})`;
+            preview.style.background = `rgba(${hover.r},${hover.g},${hover.b},${alpha})`;
+        } else {
+            label.innerText = 'Hover color: none';
+            updatePreview();
+        }
+    };
+
+    wheel.onmouseout = () => {
+        document.getElementById('color-hover-label').innerText = 'Hover color: none';
+        updatePreview();
+    };
+
+    function updatePreview() {
         color.a = document.getElementById('alphaSlider').value / 100;
-        document.getElementById('color-preview').style.background = `rgba(${color.r},${color.g},${color.b},${color.a})`; 
+        document.getElementById('color-preview').style.background = `rgba(${color.r},${color.g},${color.b},${color.a})`;
     }
 
     // --- Layers & UI ---
