@@ -5,6 +5,7 @@
     <title>RAGE</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
     <style type="text/css">
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
@@ -36,7 +37,9 @@
         }
         button:hover { background: #1a2e1f; color: #8fbc8f; }
         .active { background: #0f1a11 !important; color: #8fbc8f !important; border-color: #4a7c59 !important; }
-        
+        .link-panel { margin-top: 10px; padding: 10px; background: #050805; border: 1px solid #1a2e1f; color: #8fbc8f; font-size: 13px; }
+        .link-panel a { color: #74c278; word-break: break-all; }
+        .status-label { color: #8fbc8f; font-size: 12px; margin-top: 6px; }
         #canvas-frame { background: #000; border: 1px solid #1a2e1f; position: relative; flex-grow: 1; overflow: hidden;}
         canvas { display: block; image-rendering: pixelated; width: 100%; height: 100%;}
 
@@ -68,6 +71,8 @@
         <div style="display: flex; gap: 10px;">
             <button onclick="undo()" style="width: 60px;">Undo</button>
             <button onclick="redo()" style="width: 60px;">Redo</button>
+            <button onclick="exportGif()" style="width: 100px;">EXPORT_GIF</button>
+            <button onclick="uploadGifToSupabase()" style="width: 130px;">UPLOAD_TO_SUPABASE</button>
         </div>
     </div>
 
@@ -129,6 +134,12 @@
                 <div class="panel-h">Layers</div>
                 <div id="layerList" style="overflow-y:auto; flex-grow:1;"></div>
                 <button onclick="addLayer()" style="background:#1a2e1f; margin-top:5px;">+ NEW_LAYER</button>
+                <div class="link-panel" id="gifLinkPanel" style="display:none;">
+                    <div class="panel-h" style="margin-bottom:6px;">GIF DOWNLOAD</div>
+                    <div id="gifLinkText">No GIF created yet.</div>
+                    <button onclick="copyGifLink()" style="margin-top:8px; width:100%;">COPY_LINK</button>
+                    <div class="status-label" id="gifStatusLabel"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -190,7 +201,14 @@
         });
     }
 
-    // --- QR / Export ---
+    // --- Export / Supabase ---
+    const SUPABASE_URL = 'https://ufeoeutoegjptrbnpvcb.supabase.co/rest/v1/';
+    const SUPABASE_ANON_KEY = 'sb_publishable_A0mVZrliFf-AYZE9XVqsEg_IL7ex22y';
+    const SUPABASE_BUCKET = 'gifs';
+    const supabaseClient = window.supabase && window.supabase.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+    let latestGifBlob = null;
+    let latestGifUrl = null;
+
     function generateQR() {
         const dataURL = canvas.toDataURL("image/png");
         const qr = new QRious({
@@ -204,8 +222,6 @@
         document.getElementById('qr-overlay').style.display = 'flex';
     }
 
-
-
     function downloadQrImage() {
         const qrCanvas = document.getElementById('qr-canvas');
         const a = document.createElement('a');
@@ -214,6 +230,138 @@
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
+    }
+
+    function setGifStatus(message, isError = false) {
+        const label = document.getElementById('gifStatusLabel');
+        label.innerText = message;
+        label.style.color = isError ? '#f55' : '#8fbc8f';
+    }
+
+    function getDeterministicNoise(seed) {
+        const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453123;
+        return x - Math.floor(x);
+    }
+
+    function getDistort(i, t, vibe, disruption) {
+        if (vibe === 'classic') return { x: Math.sin(t + i * 0.2) * disruption, y: 0 };
+        if (vibe === 'ethereal') return { x: Math.sin(t + i * 0.5) * disruption, y: Math.cos(t + i * 0.5) * disruption };
+        if (vibe === 'punk') {
+            const seed = i * 31 + Math.floor(t * 3);
+            return {
+                x: (getDeterministicNoise(seed) - 0.5) * disruption * 2,
+                y: (getDeterministicNoise(seed + 1) - 0.5) * disruption * 2
+            };
+        }
+        if (vibe === 'orbital') return { x: Math.cos(t * 2 + i) * disruption, y: Math.sin(t * 0.5 + i) * disruption };
+        return { x: 0, y: 0 };
+    }
+
+    function renderFrame(time, renderCtx) {
+        renderCtx.clearRect(0, 0, canvas.width, canvas.height);
+        layers.forEach(lyr => {
+            if (!lyr.visible) return;
+            lyr.objects.forEach(o => {
+                renderCtx.beginPath();
+                renderCtx.strokeStyle = o.type === 'eraser' ? '#000' : o.color;
+                renderCtx.lineWidth = o.thickness;
+                renderCtx.lineCap = 'round';
+                if (o.type === 'brush' || o.type === 'eraser') {
+                    o.pts.forEach((p, i) => {
+                        const dr = getDistort(i, time, lyr.vibe, lyr.disruption);
+                        if (i === 0) renderCtx.moveTo(p.x + dr.x, p.y + dr.y);
+                        else renderCtx.lineTo(p.x + dr.x, p.y + dr.y);
+                    });
+                } else if (o.type === 'rect') {
+                    const dr = getDistort(0, time, lyr.vibe, lyr.disruption);
+                    renderCtx.strokeRect(o.x + dr.x, o.y + dr.y, o.w, o.h);
+                } else if (o.type === 'circle') {
+                    const dr = getDistort(0, time, lyr.vibe, lyr.disruption);
+                    const rad = Math.sqrt(o.w ** 2 + o.h ** 2);
+                    renderCtx.arc(o.x + dr.x, o.y + dr.y, rad, 0, Math.PI * 2);
+                }
+                renderCtx.stroke();
+            });
+        });
+    }
+
+    async function exportGif() {
+        setGifStatus('Rendering GIF...', false);
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        const gif = new GIF({
+            workers: 2,
+            quality: 10,
+            width: canvas.width,
+            height: canvas.height,
+            workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js'
+        });
+
+        const frameCount = 24;
+        const frameDelay = 100;
+        for (let frame = 0; frame < frameCount; frame++) {
+            const time = frame * 0.12;
+            renderFrame(time, tempCtx);
+            gif.addFrame(tempCanvas, { copy: true, delay: frameDelay });
+        }
+
+        gif.on('finished', function(blob) {
+            latestGifBlob = blob;
+            const url = URL.createObjectURL(blob);
+            latestGifUrl = url;
+            document.getElementById('gifLinkPanel').style.display = 'block';
+            document.getElementById('gifLinkText').innerHTML = `<a href="${url}" target="_blank">Download GIF</a>`;
+            setGifStatus('GIF ready. You can download it or upload it to Supabase.', false);
+        });
+
+        gif.render();
+    }
+
+    async function uploadGifToSupabase() {
+        if (!latestGifBlob) {
+            setGifStatus('Create a GIF first using EXPORT_GIF.', true);
+            return;
+        }
+        if (!supabaseClient) {
+            setGifStatus('Supabase client is not initialized. Set SUPABASE_URL and SUPABASE_ANON_KEY.', true);
+            return;
+        }
+
+        setGifStatus('Uploading GIF to Supabase...', false);
+        const fileName = `wiggly_paint_${Date.now()}.gif`;
+        const { data: uploadData, error: uploadError } = await supabaseClient.storage
+            .from(SUPABASE_BUCKET)
+            .upload(fileName, latestGifBlob, { contentType: 'image/gif', upsert: true });
+
+        if (uploadError) {
+            setGifStatus(`Upload failed: ${uploadError.message}`, true);
+            return;
+        }
+
+        const { data: publicData, error: publicError } = await supabaseClient.storage
+            .from(SUPABASE_BUCKET)
+            .createSignedUrl(fileName, 60 * 60);
+
+        if (publicError) {
+            setGifStatus(`Could not create download link: ${publicError.message}`, true);
+            return;
+        }
+
+        latestGifUrl = publicData.signedUrl;
+        document.getElementById('gifLinkPanel').style.display = 'block';
+        document.getElementById('gifLinkText').innerHTML = `<a href="${latestGifUrl}" target="_blank">Download GIF from Supabase</a>`;
+        setGifStatus('Uploaded successfully. Share the generated download link.', false);
+    }
+
+    function copyGifLink() {
+        if (!latestGifUrl) return;
+        navigator.clipboard.writeText(latestGifUrl).then(() => {
+            setGifStatus('Link copied to clipboard.', false);
+        }, () => {
+            setGifStatus('Unable to copy link.', true);
+        });
     }
 
     // --- Color ---
