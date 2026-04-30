@@ -64,7 +64,7 @@
 
 <div id="window">
     <div id="title-bar">
-        <span>⚰️ RAGE_v69 // Save your art by generating a QR code!</span>
+        <span>💚 RAGE_v69 // BBbbBbBBRRRrRRrrRRR</span>
         <div style="display: flex; gap: 10px;">
             <button onclick="undo()" style="width: 60px;">Undo</button>
             <button onclick="redo()" style="width: 60px;">Redo</button>
@@ -76,7 +76,7 @@
             <div class="panel">
                 <div class="panel-h">Tools</div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
-                    <button id="t-brush" class="active" onclick="setTool('brush')">Strand</button>
+                    <button id="t-brush" class="active" onclick="setTool('brush')">Layer</button>
                     <button id="t-select" onclick="setTool('select')">Select</button>
                     <button id="t-rect" onclick="setTool('rect')">Square</button>
                     <button id="t-circle" onclick="setTool('circle')">Circle</button>
@@ -128,7 +128,7 @@
             <div class="panel" style="flex-grow:1; display:flex; flex-direction:column;">
                 <div class="panel-h">Layers</div>
                 <div id="layerList" style="overflow-y:auto; flex-grow:1;"></div>
-                <button onclick="addLayer()" style="background:#1a2e1f; margin-top:5px;">+ NEW_STRAND</button>
+                <button onclick="addLayer()" style="background:#1a2e1f; margin-top:5px;">+ NEW_LAYER</button>
             </div>
         </div>
     </div>
@@ -136,7 +136,7 @@
     <div class="footer">
         <span>X/Y: <span id="coords">0,0</span></span>
         <span>UNDO_STACK: <span id="undoCount">0</span></span>
-        <span>ENGINE: RAGE_v69_PRO</span>
+        <span>ENGINE: 4M Felix Meow MeOw</span>
     </div>
 </div>
 
@@ -359,7 +359,7 @@
             const div = document.createElement('div');
             div.className = "layer-item " + (i==activeIdx?'active-layer':'');
             div.onclick = () => { activeIdx=i; syncSettings(); updateUI(); };
-            div.innerHTML = `<span>Strand_${i}</span> <div class="layer-btn-row">
+            div.innerHTML = `<span>Layer_${i}</span> <div class="layer-btn-row">
                 <button class="tiny-btn" onclick="moveLayer(${i}, 1); event.stopPropagation();">▲</button>
                 <button class="tiny-btn" onclick="moveLayer(${i}, -1); event.stopPropagation();">▼</button>
                 <button class="tiny-btn" onclick="layers[${i}].visible=!layers[${i}].visible; event.stopPropagation(); updateUI();">${l.visible?'👁':'◻'}</button>
